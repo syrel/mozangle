@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014 The ANGLE Project Authors. All rights reserved.
+// Copyright 2014 The ANGLE Project Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
@@ -16,7 +16,7 @@
 namespace angle
 {
 struct CompilerWorkaroundsD3D;
-struct WorkaroundsD3D;
+struct FeaturesD3D;
 }  // namespace angle
 
 namespace gl
@@ -33,16 +33,15 @@ struct D3DUniform;
 class ShaderD3D : public ShaderImpl
 {
   public:
-    ShaderD3D(const gl::ShaderState &data,
-              const angle::WorkaroundsD3D &workarounds,
+    ShaderD3D(const gl::ShaderState &state,
+              const angle::FeaturesD3D &features,
               const gl::Extensions &extensions);
     ~ShaderD3D() override;
 
-    // ShaderImpl implementation
-    ShCompileOptions prepareSourceAndReturnOptions(const gl::Context *context,
-                                                   std::stringstream *sourceStream,
-                                                   std::string *sourcePath) override;
-    bool postTranslateCompile(gl::ShCompilerInstance *compiler, std::string *infoLog) override;
+    std::shared_ptr<WaitableCompileEvent> compile(const gl::Context *context,
+                                                  gl::ShCompilerInstance *compilerInstance,
+                                                  ShCompileOptions options) override;
+
     std::string getDebugInfo() const override;
 
     // D3D-specific methods
@@ -55,10 +54,12 @@ class ShaderD3D : public ShaderImpl
     unsigned int getUniformRegister(const std::string &uniformName) const;
 
     unsigned int getUniformBlockRegister(const std::string &blockName) const;
+    bool shouldUniformBlockUseStructuredBuffer(const std::string &blockName) const;
     unsigned int getShaderStorageBlockRegister(const std::string &blockName) const;
     unsigned int getReadonlyImage2DRegisterIndex() const { return mReadonlyImage2DRegisterIndex; }
     unsigned int getImage2DRegisterIndex() const { return mImage2DRegisterIndex; }
     bool useImage2DFunction(const std::string &functionName) const;
+    const std::set<std::string> &getSlowCompilingUniformBlockSet() const;
     void appendDebugInfo(const std::string &info) const { mDebugInfo += info; }
 
     void generateWorkarounds(angle::CompilerWorkaroundsD3D *workarounds) const;
@@ -69,10 +70,12 @@ class ShaderD3D : public ShaderImpl
     bool usesSecondaryColor() const { return mUsesSecondaryColor; }
     bool usesFragCoord() const { return mUsesFragCoord; }
     bool usesFrontFacing() const { return mUsesFrontFacing; }
+    bool usesHelperInvocation() const { return mUsesHelperInvocation; }
     bool usesPointSize() const { return mUsesPointSize; }
     bool usesPointCoord() const { return mUsesPointCoord; }
     bool usesDepthRange() const { return mUsesDepthRange; }
     bool usesFragDepth() const { return mUsesFragDepth; }
+    bool usesVertexID() const { return mUsesVertexID; }
     bool usesViewID() const { return mUsesViewID; }
     bool hasANGLEMultiviewEnabled() const { return mHasANGLEMultiviewEnabled; }
 
@@ -85,11 +88,13 @@ class ShaderD3D : public ShaderImpl
     bool mUsesSecondaryColor;
     bool mUsesFragCoord;
     bool mUsesFrontFacing;
+    bool mUsesHelperInvocation;
     bool mUsesPointSize;
     bool mUsesPointCoord;
     bool mUsesDepthRange;
     bool mUsesFragDepth;
     bool mHasANGLEMultiviewEnabled;
+    bool mUsesVertexID;
     bool mUsesViewID;
     bool mUsesDiscardRewriting;
     bool mUsesNestedBreak;
@@ -99,6 +104,8 @@ class ShaderD3D : public ShaderImpl
     mutable std::string mDebugInfo;
     std::map<std::string, unsigned int> mUniformRegisterMap;
     std::map<std::string, unsigned int> mUniformBlockRegisterMap;
+    std::map<std::string, bool> mUniformBlockUseStructuredBufferMap;
+    std::set<std::string> mSlowCompilingUniformBlockSet;
     std::map<std::string, unsigned int> mShaderStorageBlockRegisterMap;
     unsigned int mReadonlyImage2DRegisterIndex;
     unsigned int mImage2DRegisterIndex;

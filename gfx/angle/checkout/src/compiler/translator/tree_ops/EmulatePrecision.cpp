@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2002-2014 The ANGLE Project Authors. All rights reserved.
+// Copyright 2002 The ANGLE Project Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
@@ -174,7 +174,7 @@ std::string RoundingHelperWriterGLSL::getTypeString(const char *glslType)
 
 std::string RoundingHelperWriterESSL::getTypeString(const char *glslType)
 {
-    std::stringstream typeStrStr;
+    std::stringstream typeStrStr = sh::InitializeStream<std::stringstream>();
     typeStrStr << "highp " << glslType;
     return typeStrStr.str();
 }
@@ -257,7 +257,7 @@ void RoundingHelperWriterGLSL::writeFloatRoundingHelpers(TInfoSinkBase &sink)
 void RoundingHelperWriterGLSL::writeVectorRoundingHelpers(TInfoSinkBase &sink,
                                                           const unsigned int size)
 {
-    std::stringstream vecTypeStrStr;
+    std::stringstream vecTypeStrStr = sh::InitializeStream<std::stringstream>();
     vecTypeStrStr << "vec" << size;
     std::string vecType = getTypeString(vecTypeStrStr.str().c_str());
 
@@ -287,7 +287,7 @@ void RoundingHelperWriterGLSL::writeMatrixRoundingHelper(TInfoSinkBase &sink,
                                                          const unsigned int rows,
                                                          const char *functionName)
 {
-    std::stringstream matTypeStrStr;
+    std::stringstream matTypeStrStr = sh::InitializeStream<std::stringstream>();
     matTypeStrStr << "mat" << columns;
     if (rows != columns)
     {
@@ -379,7 +379,7 @@ void RoundingHelperWriterHLSL::writeFloatRoundingHelpers(TInfoSinkBase &sink)
 void RoundingHelperWriterHLSL::writeVectorRoundingHelpers(TInfoSinkBase &sink,
                                                           const unsigned int size)
 {
-    std::stringstream vecTypeStrStr;
+    std::stringstream vecTypeStrStr = sh::InitializeStream<std::stringstream>();
     vecTypeStrStr << "float" << size;
     std::string vecType = vecTypeStrStr.str();
 
@@ -409,7 +409,7 @@ void RoundingHelperWriterHLSL::writeMatrixRoundingHelper(TInfoSinkBase &sink,
                                                          const unsigned int rows,
                                                          const char *functionName)
 {
-    std::stringstream matTypeStrStr;
+    std::stringstream matTypeStrStr = sh::InitializeStream<std::stringstream>();
     matTypeStrStr << "float" << columns << "x" << rows;
     std::string matType = matTypeStrStr.str();
 
@@ -609,7 +609,8 @@ bool EmulatePrecision::visitDeclaration(Visit visit, TIntermDeclaration *node)
     return true;
 }
 
-bool EmulatePrecision::visitInvariantDeclaration(Visit visit, TIntermInvariantDeclaration *node)
+bool EmulatePrecision::visitGlobalQualifierDeclaration(Visit visit,
+                                                       TIntermGlobalQualifierDeclaration *node)
 {
     return false;
 }
@@ -723,8 +724,8 @@ TIntermAggregate *EmulatePrecision::createRoundingFunctionCallNode(TIntermTyped 
     const ImmutableString *roundFunctionName = &kAngleFrmString;
     if (roundedChild->getPrecision() == EbpLow)
         roundFunctionName = &kAngleFrlString;
-    TIntermSequence *arguments = new TIntermSequence();
-    arguments->push_back(roundedChild);
+    TIntermSequence arguments;
+    arguments.push_back(roundedChild);
 
     TVector<const TVariable *> parameters;
     TType *paramType = new TType(roundedChild->getType());
@@ -735,24 +736,24 @@ TIntermAggregate *EmulatePrecision::createRoundingFunctionCallNode(TIntermTyped 
                                        SymbolType::AngleInternal));
 
     return TIntermAggregate::CreateRawFunctionCall(
-        *getInternalFunction(*roundFunctionName, roundedChild->getType(), arguments, parameters,
+        *getInternalFunction(*roundFunctionName, roundedChild->getType(), &arguments, parameters,
                              true),
-        arguments);
+        &arguments);
 }
 
 TIntermAggregate *EmulatePrecision::createCompoundAssignmentFunctionCallNode(TIntermTyped *left,
                                                                              TIntermTyped *right,
                                                                              const char *opNameStr)
 {
-    std::stringstream strstr;
+    std::stringstream strstr = sh::InitializeStream<std::stringstream>();
     if (left->getPrecision() == EbpMedium)
         strstr << "angle_compound_" << opNameStr << "_frm";
     else
         strstr << "angle_compound_" << opNameStr << "_frl";
     ImmutableString functionName = ImmutableString(strstr.str());
-    TIntermSequence *arguments   = new TIntermSequence();
-    arguments->push_back(left);
-    arguments->push_back(right);
+    TIntermSequence arguments;
+    arguments.push_back(left);
+    arguments.push_back(right);
 
     TVector<const TVariable *> parameters;
     TType *leftParamType = new TType(left->getType());
@@ -769,8 +770,8 @@ TIntermAggregate *EmulatePrecision::createCompoundAssignmentFunctionCallNode(TIn
                                        SymbolType::AngleInternal));
 
     return TIntermAggregate::CreateRawFunctionCall(
-        *getInternalFunction(functionName, left->getType(), arguments, parameters, false),
-        arguments);
+        *getInternalFunction(functionName, left->getType(), &arguments, parameters, false),
+        &arguments);
 }
 
 }  // namespace sh

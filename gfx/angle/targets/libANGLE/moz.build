@@ -46,6 +46,7 @@ LOCAL_INCLUDES += [
     '../../checkout/out/gen/angle/',
     '../../checkout/src/',
     '../../checkout/src/common/third_party/base/',
+    "../../checkout/third_party/zlib/google/",
 ]
 
 #CXXFLAGS += [
@@ -141,14 +142,13 @@ SOURCES += [
     '../../checkout/src/libANGLE/GLES1Renderer.cpp',
     '../../checkout/src/libANGLE/GLES1State.cpp',
     '../../checkout/src/libANGLE/HandleAllocator.cpp',
-    '../../checkout/src/libANGLE/HandleRangeAllocator.cpp',
     '../../checkout/src/libANGLE/Image.cpp',
     '../../checkout/src/libANGLE/ImageIndex.cpp',
     '../../checkout/src/libANGLE/IndexRangeCache.cpp',
     '../../checkout/src/libANGLE/LoggingAnnotator.cpp',
+    '../../checkout/src/libANGLE/MemoryObject.cpp',
     '../../checkout/src/libANGLE/MemoryProgramCache.cpp',
     '../../checkout/src/libANGLE/Observer.cpp',
-    '../../checkout/src/libANGLE/Path.cpp',
     '../../checkout/src/libANGLE/Platform.cpp',
     '../../checkout/src/libANGLE/Program.cpp',
     '../../checkout/src/libANGLE/ProgramLinkedResources.cpp',
@@ -166,8 +166,6 @@ SOURCES += [
     '../../checkout/src/libANGLE/renderer/d3d/d3d11/Context11.cpp',
     '../../checkout/src/libANGLE/renderer/d3d/d3d11/converged/CompositorNativeWindow11.cpp',
     '../../checkout/src/libANGLE/renderer/d3d/d3d11/DebugAnnotator11.cpp',
-    '../../checkout/src/libANGLE/renderer/d3d/d3d11/dxgi_format_map_autogen.cpp',
-    '../../checkout/src/libANGLE/renderer/d3d/d3d11/dxgi_support_table.cpp',
     '../../checkout/src/libANGLE/renderer/d3d/d3d11/Fence11.cpp',
     '../../checkout/src/libANGLE/renderer/d3d/d3d11/formatutils11.cpp',
     '../../checkout/src/libANGLE/renderer/d3d/d3d11/Framebuffer11.cpp',
@@ -274,6 +272,7 @@ USE_LIBS += [
     'angle_gpu_info_util',
     'angle_image_util',
     'translator',
+    "compression_utils_portable",
 ]
 
 DIRS += [
@@ -281,6 +280,7 @@ DIRS += [
     '../angle_gpu_info_util',
     '../angle_image_util',
     '../translator',
+    "../compression_utils_portable",
 ]
 
 OS_LIBS += [

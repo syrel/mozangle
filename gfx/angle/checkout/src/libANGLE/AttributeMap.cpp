@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014 The ANGLE Project Authors. All rights reserved.
+// Copyright 2014 The ANGLE Project Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
@@ -11,9 +11,11 @@
 namespace egl
 {
 
-AttributeMap::AttributeMap() {}
+AttributeMap::AttributeMap() = default;
 
 AttributeMap::AttributeMap(const AttributeMap &other) = default;
+
+AttributeMap &AttributeMap::operator=(const AttributeMap &other) = default;
 
 AttributeMap::~AttributeMap() = default;
 
@@ -37,7 +39,7 @@ EGLAttrib AttributeMap::get(EGLAttrib key) const
 EGLAttrib AttributeMap::get(EGLAttrib key, EGLAttrib defaultValue) const
 {
     auto iter = mAttributes.find(key);
-    return (mAttributes.find(key) != mAttributes.end()) ? iter->second : defaultValue;
+    return (iter != mAttributes.end()) ? iter->second : defaultValue;
 }
 
 EGLint AttributeMap::getAsInt(EGLAttrib key) const

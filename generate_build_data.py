@@ -9,7 +9,7 @@ def run():
     data = {}
     for lib in ["translator", "libANGLE", "libEGL", "libGLESv2"]:
         data[lib] = {
-            "DEFINES": {},
+            "DEFINES": { "NDEBUG": "Yes" },
             "LOCAL_INCLUDES": [],
             "SOURCES": [],
             "USE_LIBS": [],
@@ -29,12 +29,17 @@ def parse_lib(directory, data, suffix=""):
         "GeckoSharedLibrary": noop,
         "AllowCompilerWarnings": noop,
         "SRCDIR": directory,
-        "CXXFLAGS": "",
+        "CXXFLAGS": [],
         "DIRS": [],
+        "EXPORTS": [],
         "CONFIG": {
             "SSE2_FLAGS": "",
-            "OS_ARCH": "neither",
+            "OS_ARCH": "WINNT",
             "INTEL_ARCHITECTURE": "Yes",
+            "CC_TYPE": "clang",
+            "MOZ_X11_CFLAGS": "",
+            "MOZ_WIDGET_TOOLKIT": "windows",
+            "ZLIB_IN_MOZGLUE": "No"
         },
     }
     env.update(data)

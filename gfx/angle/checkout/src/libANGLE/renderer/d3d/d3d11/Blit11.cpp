@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013 The ANGLE Project Authors. All rights reserved.
+// Copyright 2013 The ANGLE Project Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
@@ -19,7 +19,7 @@
 #include "libANGLE/renderer/d3d/d3d11/formatutils11.h"
 #include "libANGLE/renderer/d3d/d3d11/renderer11_utils.h"
 #include "libANGLE/renderer/d3d/d3d11/texture_format_table.h"
-#include "third_party/trace_event/trace_event.h"
+#include "libANGLE/trace.h"
 
 namespace rx
 {
@@ -60,12 +60,13 @@ void StretchedBlitNearest_RowByRow(const gl::Box &sourceArea,
                                    uint8_t *destData)
 {
     int srcHeightSubOne = (sourceArea.height - 1);
-    size_t copySize     = pixelSize * destArea.width;
+    size_t copySize     = pixelSize * clippedDestArea.width;
     size_t srcOffset    = sourceArea.x * pixelSize;
-    size_t destOffset   = destArea.x * pixelSize;
+    size_t destOffset   = clippedDestArea.x * pixelSize;
 
     for (int y = clippedDestArea.y; y < clippedDestArea.y + clippedDestArea.height; y++)
     {
+        // TODO: Fix divide by zero when height == 1. http://anglebug.com/6099
         float yPerc = static_cast<float>(y - destArea.y) / (destArea.height - 1);
 
         // Interpolate using the original source rectangle to determine which row to sample from
@@ -141,7 +142,10 @@ void StretchedBlitNearest(const gl::Box &sourceArea,
                           uint8_t *destData)
 {
     gl::Rectangle clippedDestArea(destArea.x, destArea.y, destArea.width, destArea.height);
-    gl::ClipRectangle(clippedDestArea, clipRect, &clippedDestArea);
+    if (!gl::ClipRectangle(clippedDestArea, clipRect, &clippedDestArea))
+    {
+        return;
+    }
 
     // Determine if entire rows can be copied at once instead of each individual pixel. There
     // must be no out of bounds lookups, whole rows copies, and no scale.
@@ -576,7 +580,7 @@ angle::Result Blit11::initResources(const gl::Context *context)
         return angle::Result::Continue;
     }
 
-    TRACE_EVENT0("gpu.angle", "Blit11::initResources");
+    ANGLE_TRACE_EVENT0("gpu.angle", "Blit11::initResources");
 
     D3D11_BUFFER_DESC vbDesc;
     vbDesc.ByteWidth =
@@ -1310,7 +1314,7 @@ angle::Result Blit11::copyAndConvert(const gl::Context *context,
                                  copySize, srcPixelStride, destPixelStride, convertFunction));
 
     // Work around timeouts/TDRs in older NVIDIA drivers.
-    if (mRenderer->getWorkarounds().depthStencilBlitExtraCopy)
+    if (mRenderer->getFeatures().depthStencilBlitExtraCopy.enabled)
     {
         D3D11_MAPPED_SUBRESOURCE mapped;
         ANGLE_TRY(

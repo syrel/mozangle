@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2002-2013 The ANGLE Project Authors. All rights reserved.
+// Copyright 2002 The ANGLE Project Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
@@ -38,6 +38,8 @@ size_t VariableExternalSize(GLenum type);
 int VariableRowCount(GLenum type);
 int VariableColumnCount(GLenum type);
 bool IsSamplerType(GLenum type);
+bool IsSamplerCubeType(GLenum type);
+bool IsSamplerYUVType(GLenum type);
 bool IsImageType(GLenum type);
 bool IsImage2DType(GLenum type);
 bool IsAtomicCounterType(GLenum type);
@@ -49,6 +51,7 @@ int MatrixRegisterCount(GLenum type, bool isRowMajorMatrix);
 int MatrixComponentCount(GLenum type, bool isRowMajorMatrix);
 int VariableSortOrder(GLenum type);
 GLenum VariableBoolVectorType(GLenum type);
+std::string GetGLSLTypeString(GLenum type);
 
 int AllocateFirstFreeBits(unsigned int *bits, unsigned int allocationSize, unsigned int bitsSize);
 
@@ -59,10 +62,16 @@ int AllocateFirstFreeBits(unsigned int *bits, unsigned int allocationSize, unsig
 // outSubscripts.
 std::string ParseResourceName(const std::string &name, std::vector<unsigned int> *outSubscripts);
 
-// Find the child field which matches 'fullName' == var.name + "." + field.name.
-// Return nullptr if not found.
-const sh::ShaderVariable *FindShaderVarField(const sh::ShaderVariable &var,
-                                             const std::string &fullName);
+bool IsBuiltInName(const char *name);
+ANGLE_INLINE bool IsBuiltInName(const std::string &name)
+{
+    return IsBuiltInName(name.c_str());
+}
+
+// Strips only the last array index from a resource name.
+std::string StripLastArrayIndex(const std::string &name);
+
+bool SamplerNameContainsNonZeroArrayElement(const std::string &name);
 
 // Find the range of index values in the provided indices pointer.  Primitive restart indices are
 // only counted in the range if primitive restart is disabled.
@@ -74,7 +83,22 @@ IndexRange ComputeIndexRange(DrawElementsType indexType,
 // Get the primitive restart index value for the given index type.
 GLuint GetPrimitiveRestartIndex(DrawElementsType indexType);
 
+// Get the primitive restart index value with the given C++ type.
+template <typename T>
+constexpr T GetPrimitiveRestartIndexFromType()
+{
+    return std::numeric_limits<T>::max();
+}
+
+static_assert(GetPrimitiveRestartIndexFromType<uint8_t>() == 0xFF,
+              "verify restart index for uint8_t values");
+static_assert(GetPrimitiveRestartIndexFromType<uint16_t>() == 0xFFFF,
+              "verify restart index for uint8_t values");
+static_assert(GetPrimitiveRestartIndexFromType<uint32_t>() == 0xFFFFFFFF,
+              "verify restart index for uint8_t values");
+
 bool IsTriangleMode(PrimitiveMode drawMode);
+bool IsPolygonMode(PrimitiveMode mode);
 
 namespace priv
 {
@@ -187,6 +211,53 @@ T GetClampedVertexCount(size_t vertexCount)
     static constexpr size_t kMax = static_cast<size_t>(std::numeric_limits<T>::max());
     return static_cast<T>(vertexCount > kMax ? kMax : vertexCount);
 }
+
+enum class PipelineType
+{
+    GraphicsPipeline = 0,
+    ComputePipeline  = 1,
+};
+
+PipelineType GetPipelineType(ShaderType shaderType);
+
+// For use with KHR_debug.
+const char *GetDebugMessageSourceString(GLenum source);
+const char *GetDebugMessageTypeString(GLenum type);
+const char *GetDebugMessageSeverityString(GLenum severity);
+
+// For use with EXT_texture_format_sRGB_override and EXT_texture_sRGB_decode
+// A texture may be forced to decode to a nonlinear colorspace, to a linear colorspace, or to the
+// default colorspace of its current format.
+//
+// Default corresponds to "the texture should use the imageview that corresponds to its format"
+// Linear corresponds to "the texture has sRGB decoding disabled by extension, and should use a
+// linear imageview even if it is in a nonlinear format" NonLinear corresponds to "the texture has
+// sRGB override enabled by extension, and should use a nonlinear imageview even if it is in a
+// linear format"
+enum class SrgbOverride
+{
+    Default = 0,
+    SRGB,
+    Linear
+};
+
+// For use with EXT_sRGB_write_control
+// A render target may be forced to convert to a linear colorspace, or may be allowed to do whatever
+// colorspace conversion is appropriate for its format. There is no option to force linear->sRGB, it
+// can only convert from sRGB->linear
+enum class SrgbWriteControlMode
+{
+    Default = 0,
+    Linear  = 1
+};
+
+ShaderType GetShaderTypeFromBitfield(size_t singleShaderType);
+GLbitfield GetBitfieldFromShaderType(ShaderType shaderType);
+bool ShaderTypeSupportsTransformFeedback(ShaderType shaderType);
+// Given a set of shader stages, returns the last vertex processing stage.  This is the stage that
+// interfaces the fragment shader.
+ShaderType GetLastPreFragmentStage(ShaderBitSet shaderTypes);
+
 }  // namespace gl
 
 namespace egl
@@ -214,7 +285,7 @@ EGLenum GLComponentTypeToEGLColorComponentType(GLenum glComponentType);
 EGLClientBuffer GLObjectHandleToEGLClientBuffer(GLuint handle);
 }  // namespace gl_egl
 
-#if !defined(ANGLE_ENABLE_WINDOWS_STORE)
+#if !defined(ANGLE_ENABLE_WINDOWS_UWP)
 std::string getTempPath();
 void writeFile(const char *path, const void *data, size_t size);
 #endif
@@ -222,5 +293,14 @@ void writeFile(const char *path, const void *data, size_t size);
 #if defined(ANGLE_PLATFORM_WINDOWS)
 void ScheduleYield();
 #endif
+
+// Get the underlying type. Useful for indexing into arrays with enum values by avoiding the clutter
+// of the extraneous static_cast<>() calls.
+// https://stackoverflow.com/a/8357462
+template <typename E>
+constexpr typename std::underlying_type<E>::type ToUnderlying(E e) noexcept
+{
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
 
 #endif  // COMMON_UTILITIES_H_
