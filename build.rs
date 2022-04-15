@@ -10,19 +10,6 @@ use std::path::{Path, PathBuf};
 mod build_data;
 
 fn main() {
-    // let build = cc::Build::new();
-    // if std::process::Command::new("ccache").arg("--version").status().is_ok() {
-    //     let compiler = build.get_compiler();
-    //     let path = compiler.path();
-    //
-    //     let compiler_name = path.file_name().unwrap().to_string_lossy();
-    //     let compiler_dir = path.parent().unwrap().to_path_buf();
-    //
-    //     std::env::set_var("CCACHE_PATH", compiler_dir.display().to_string());
-    //     std::env::set_var("CC", format!("ccache {}", &compiler_name));
-    //     std::env::set_var("CXX", format!("ccache {}", &compiler_name));
-    // }
-
     build_angle();
     generate_bindings();
 }
